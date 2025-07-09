@@ -1,22 +1,41 @@
 package com.baotoshop.ecommerce.service;
 
 import com.baotoshop.ecommerce.dao.CustomerRepository;
+import com.baotoshop.ecommerce.dto.PaymentInfo;
 import com.baotoshop.ecommerce.dto.Purchase;
 import com.baotoshop.ecommerce.dto.PurchaseResponse;
 import com.baotoshop.ecommerce.entity.Customer;
 import com.baotoshop.ecommerce.entity.Order;
 import com.baotoshop.ecommerce.entity.OrderItem;
+import com.paypal.core.PayPalEnvironment;
+import com.paypal.core.PayPalHttpClient;
+import com.paypal.http.exceptions.HttpException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class CheckoutServiceImpl implements CheckoutService {
     private CustomerRepository customerRepository;
+    private final PayPalHttpClient payPalClient;
 
-    public CheckoutServiceImpl(CustomerRepository customerRepository) {
+    public CheckoutServiceImpl(CustomerRepository customerRepository,
+                               @Value("${paypal.client.id}") String clientId,
+                               @Value("${paypal.client.secret}") String clientSecret,
+                               @Value("${paypal.mode}") String mode) {
         this.customerRepository = customerRepository;
+        // Khởi tạo PayPal SDK client
+        PayPalEnvironment env;
+        if ("live".equalsIgnoreCase(mode)) {
+            env = new PayPalEnvironment.Live(clientId, clientSecret);
+        } else {
+            env = new PayPalEnvironment.Sandbox(clientId, clientSecret);
+        }
+        this.payPalClient = new PayPalHttpClient(env);  // tạo client PayPal
     }
 
     @Override
@@ -56,6 +75,11 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         // return a response
         return new PurchaseResponse(orderTrackingNumber);
+    }
+
+    @Override
+    public com.paypal.orders.Order createPaymentIntent(PaymentInfo paymentInfo) throws IOException, HttpException {
+        return null;
     }
 
     private String generateOrderTrackingNumber() {
